@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class ClienteUDP extends Thread {
 	//Cambiar los valores de las constantes por tus IP
@@ -76,7 +77,8 @@ public class ClienteUDP extends Thread {
 				socket.send(packet);
 				
 				System.out.println("Enviando "+segmento);
-				Thread.sleep(1000);
+				//Retraso
+				Thread.sleep(500);
 				
 			}
 			
@@ -96,7 +98,7 @@ public class ClienteUDP extends Thread {
 	
 	public static void main(String[] args) {
 		//Selecciona el mensaje a enviar y el numero de caracteres de cada trozo
-		new ClienteUDP("Era una preciosa tarde de verano cuando aun no habia amainado", 10).start();
+		new ClienteUDP("Era una preciosa tarde de verano cuando aun no habia amainado", 2).start();
 	}
 
 }

@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ServidorUDP extends Thread {
+public class ServidorUDP {
 	//Cambiar los valores de las constantes por tus IP
 	public static final String IP_SERV = "192.168.1.130";
 	public static final int PORT_SERV = 5000;
@@ -24,10 +24,10 @@ public class ServidorUDP extends Thread {
 		salir = false;
 	}
 	
-	@Override
+	
 	public void run(){
 		try {
-			byte[] buffer = new byte[100000];
+			byte[] buffer = new byte[512];
 			DatagramSocket socket = new DatagramSocket(PORT_SERV, InetAddress.getByName(IP_SERV));
 			DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
@@ -38,32 +38,32 @@ public class ServidorUDP extends Thread {
 				if(mapaMensajes.containsKey(packet.getAddress())){
 				
 					ContenedorMensajes contenedorMensaje = mapaMensajes.get(packet.getAddress());
-					//Si esta lleno lo mostramos y sacamos
+					
+					//Añadimos al contenedor
+					String msg = new String(packet.getData(), packet.getOffset(), packet.getLength());
+					contenedorMensaje.anadirMensaje(msg);
+						
+					System.out.println("Mensaje recibido de "+packet.getAddress()
+					+ "("+contenedorMensaje.getMensajeActual()+"/"+contenedorMensaje.getMensajesEsperados()+"): "+msg);
+					
+					//Si esta lleno lo quitamos
 					if(contenedorMensaje.estaLleno()){
 						System.out.println("Mensaje completado de "+packet.getAddress()+""
-								+ "("+contenedorMensaje.getMensajeActual()+"/"+contenedorMensaje.getMensajesEsperados()+"): "+contenedorMensaje.getMensaje());
-						mapaMensajes.remove(packet.getAddress());
+							+ "("+contenedorMensaje.getMensajeActual()+"/"+contenedorMensaje.getMensajesEsperados()+"): "+contenedorMensaje.getMensaje());
+							mapaMensajes.remove(packet.getAddress());
 					}else{
 						//Si no esta lleno lo actualizamos
-						String msg = new String(packet.getData());
-						contenedorMensaje.anadirMensaje(msg);
-						
 						mapaMensajes.put(packet.getAddress(), contenedorMensaje);
-						System.out.println("Mensaje recibido de "+packet.getAddress()+""
-								+ "("+msg+"/"+contenedorMensaje.getMensajesEsperados()+"): "+contenedorMensaje.getMensaje());
 					}
-					
-				}else{
-					//Si no tenemos la IP le hacemos una entrada
-					//int mensajesEsperados = ByteBuffer.wrap(packet.getData()).getInt();
-					//System.out.println(mensajesEsperados);
-					ContenedorMensajes contenedorMensaje = new ContenedorMensajes(7);
-					mapaMensajes.put(packet.getAddress(), contenedorMensaje);
-					System.out.println("Mensaje recibido de "+packet.getAddress()+""
-							+ "("+contenedorMensaje.getMensajeActual()+"/"+contenedorMensaje.getMensajesEsperados()+"): "+contenedorMensaje.getMensaje());
 				}
-				
-				Arrays.fill(buffer, (byte)0);
+				else{
+					//Si no tenemos la IP le hacemos una entrada
+					//El primer mensaje que recibimos son los trozos que va a tener el mensaje
+					int mensajesEsperados = ByteBuffer.wrap(packet.getData()).getInt();
+					ContenedorMensajes contenedorMensaje = new ContenedorMensajes(mensajesEsperados);
+					mapaMensajes.put(packet.getAddress(), contenedorMensaje);
+				}
+			
 			}
 			
 			socket.close();
@@ -76,7 +76,7 @@ public class ServidorUDP extends Thread {
 	}
 
 	public static void main(String[] args) {
-		new ServidorUDP().start();
+		new ServidorUDP().run();
 	}
 
 }

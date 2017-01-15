@@ -57,7 +57,7 @@ public class ContenedorMensajes implements Serializable {
 
 	public void anadirMensaje(String msg){
 		
-		if(mensajeActual!= mensajesEsperados){
+		if(mensajeActual != mensajesEsperados){
 			mensajeActual++;
 			mensaje.append(msg);
 		}
