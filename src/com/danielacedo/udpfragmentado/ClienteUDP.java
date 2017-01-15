@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 
 public class ClienteUDP extends Thread {
 	//Cambiar los valores de las constantes por tus IP
@@ -41,49 +42,42 @@ public class ClienteUDP extends Thread {
 			corte = (mensaje.length() / numCorte);
 		}
 
-		ContenedorMensajes contenedorMensajes = new ContenedorMensajes(corte);
 		int cont = 0;
 		int next = 0;
 		
 		try {
 			DatagramSocket socket = new DatagramSocket(PORT_CLIENT, InetAddress.getByName(IP_CLIENT));
 			
-			while(!contenedorMensajes.estaLleno()){
+			//Enviamos el número de trozos para que el servidor lo sepa
+			byte[] numCorteBytes = ByteBuffer.allocate(4).putInt(corte).array();
+			DatagramPacket cortesPacket = new DatagramPacket(numCorteBytes, numCorteBytes.length, InetAddress.getByName(IP_SERVER), PORT_SERVER);
+			socket.send(cortesPacket);
+			System.out.println("Enviando numero de trozos ->"+ByteBuffer.wrap(numCorteBytes).getInt());
+			
+			
+			while(cont != mensaje.length()){
 				
 				//Cortar el mensaje y actualizar el puntero
 				String segmento;
 				
 				if(cont + numCorte >= mensaje.length()){
 					segmento = mensaje.substring(cont, cont+(mensaje.length()%numCorte));
-					contenedorMensajes.setUltimoSegmento(segmento);
-					contenedorMensajes.anadirMensaje(segmento);
 					cont+= (mensaje.length()%numCorte);
 				}else{
 					segmento = mensaje.substring(cont, cont+(numCorte));
-					contenedorMensajes.setUltimoSegmento(segmento);
-					contenedorMensajes.anadirMensaje(segmento);
 					cont+=numCorte;
 				}
 				
 			
 				//Enviar el mensaje y mostrar los datos enviados
-				byte[] array = ContenedorMensajes.toByteArray(contenedorMensajes);
+				byte[] array = segmento.getBytes();
 				
 				DatagramPacket packet = new DatagramPacket(array, array.length, InetAddress.getByName(IP_SERVER), PORT_SERVER);
 				socket.send(packet);
 				
-				ContenedorMensajes contenedorMensajes2 = ContenedorMensajes.fromByteArray(array);
+				System.out.println("Enviando "+segmento);
+				Thread.sleep(1000);
 				
-				//Mostrar información
-				System.out.println("Enviado "+contenedorMensajes2.getUltimoSegmento()+"("
-						+contenedorMensajes2.getMensajeActual()+"/"+contenedorMensajes2.getMensajesEsperados()+")");
-				
-				if(contenedorMensajes2.estaLleno()){
-					System.out.println("Mensaje completado " + 
-							"("+contenedorMensajes2.getMensajeActual()+"/"+contenedorMensajes2.getMensajesEsperados()+"): "+
-							contenedorMensajes2.getMensaje());
-				
-				}
 			}
 			
 			socket.close();
@@ -92,9 +86,10 @@ public class ClienteUDP extends Thread {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		} 
 		
 		
 	}

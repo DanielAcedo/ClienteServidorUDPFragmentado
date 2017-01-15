@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,11 +33,11 @@ public class ServidorUDP extends Thread {
 
 			while(!salir){
 				socket.receive(packet);
-				ContenedorMensajes contenedorMensaje = ContenedorMensajes.fromByteArray(packet.getData());
 				
 				//Si ya tenemos esta IP en el mapa
 				if(mapaMensajes.containsKey(packet.getAddress())){
 				
+					ContenedorMensajes contenedorMensaje = mapaMensajes.get(packet.getAddress());
 					//Si esta lleno lo mostramos y sacamos
 					if(contenedorMensaje.estaLleno()){
 						System.out.println("Mensaje completado de "+packet.getAddress()+""
@@ -44,13 +45,19 @@ public class ServidorUDP extends Thread {
 						mapaMensajes.remove(packet.getAddress());
 					}else{
 						//Si no esta lleno lo actualizamos
+						String msg = new String(packet.getData());
+						contenedorMensaje.anadirMensaje(msg);
+						
 						mapaMensajes.put(packet.getAddress(), contenedorMensaje);
 						System.out.println("Mensaje recibido de "+packet.getAddress()+""
-								+ "("+contenedorMensaje.getMensajeActual()+"/"+contenedorMensaje.getMensajesEsperados()+"): "+contenedorMensaje.getMensaje());
+								+ "("+msg+"/"+contenedorMensaje.getMensajesEsperados()+"): "+contenedorMensaje.getMensaje());
 					}
 					
 				}else{
 					//Si no tenemos la IP le hacemos una entrada
+					//int mensajesEsperados = ByteBuffer.wrap(packet.getData()).getInt();
+					//System.out.println(mensajesEsperados);
+					ContenedorMensajes contenedorMensaje = new ContenedorMensajes(7);
 					mapaMensajes.put(packet.getAddress(), contenedorMensaje);
 					System.out.println("Mensaje recibido de "+packet.getAddress()+""
 							+ "("+contenedorMensaje.getMensajeActual()+"/"+contenedorMensaje.getMensajesEsperados()+"): "+contenedorMensaje.getMensaje());
@@ -64,8 +71,6 @@ public class ServidorUDP extends Thread {
 		} catch (SocketException | UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
